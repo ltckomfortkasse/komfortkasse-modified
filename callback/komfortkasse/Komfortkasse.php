@@ -8,7 +8,7 @@ require_once 'Komfortkasse_Order.php';
  */
 class Komfortkasse
 {
-    const PLUGIN_VER = '1.4.5.1';
+    const PLUGIN_VER = '1.4.5.2';
     const MAXLEN_SSL = 117;
     const LEN_MCRYPT = 16;
 
@@ -864,10 +864,30 @@ class Komfortkasse
 
     public static function readconfig() {
         $key = Komfortkasse_Config::getRequestParameter('confkey');
-        if (strpos($key, 'ACCESSCODE') !== false)
+
+        // Only a fixed list of non-sensitive Komfortkasse configuration keys may be read.
+        // This prevents reading arbitrary configuration entries (e.g. other modules' secrets)
+        // and never returns the plugin's own secrets (access code, API key, public/private key).
+        $allowed = array (
+                Komfortkasse_Config::activate_export,
+                Komfortkasse_Config::activate_update,
+                Komfortkasse_Config::encryption,
+                Komfortkasse_Config::payment_methods,
+                Komfortkasse_Config::status_open,
+                Komfortkasse_Config::status_paid,
+                Komfortkasse_Config::status_cancelled,
+                Komfortkasse_Config::payment_methods_invoice,
+                Komfortkasse_Config::status_open_invoice,
+                Komfortkasse_Config::status_paid_invoice,
+                Komfortkasse_Config::status_cancelled_invoice,
+                Komfortkasse_Config::payment_methods_cod,
+                Komfortkasse_Config::status_open_cod,
+                Komfortkasse_Config::status_paid_cod,
+                Komfortkasse_Config::status_cancelled_cod
+        );
+        if (!in_array($key, $allowed, true)) {
             return null;
-        if (strpos($key, 'KEY') !== false)
-            return null;
+        }
 
         $storeid = Komfortkasse_Config::getRequestParameter('storeid');
 

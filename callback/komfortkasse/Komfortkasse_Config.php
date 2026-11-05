@@ -35,14 +35,14 @@ class Komfortkasse_Config {
 		$sql_data_array = array (
 				'configuration_value' => $value
 		);
-		xtc_db_perform(TABLE_CONFIGURATION, $sql_data_array, 'update', "configuration_key='" . $constant_key . "'");
+		xtc_db_perform(TABLE_CONFIGURATION, $sql_data_array, 'update', "configuration_key='" . xtc_db_input($constant_key) . "'");
 		// cache leeren
 		unset(self::$cache[$constant_key]);
 		// nicht cachen, erst beim get() -> so kann man feststellen ob der wert erfolgreich gespeichert werden konnte (und nicht z.B. zu lang ist) self::$cache [$constant_key] = $value;
 	}
 	public static function getConfig($constant_key, $order=null) {
 		if (!array_key_exists($constant_key, self::$cache)) {
-			$config_q = xtc_db_query("SELECT configuration_value FROM " . TABLE_CONFIGURATION . " where configuration_key='" . $constant_key . "'");
+			$config_q = xtc_db_query("SELECT configuration_value FROM " . TABLE_CONFIGURATION . " where configuration_key='" . xtc_db_input($constant_key) . "'");
 			$config_a = xtc_db_fetch_array($config_q);
 			$config = $config_a ['configuration_value'];
 			self::$cache [$constant_key] = $config;

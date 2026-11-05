@@ -3,7 +3,7 @@
  * Komfortkasse
  * Installer
  *
- * @version 1.4.4.14-modified/xtc3
+ * @version 1.4.5.2-modified/xtc3
  *
  * use these SQL statements to delete the configuration entries in order to re-install the plugin:
  * delete from configuration_group where configuration_group_title='Komfortkasse';

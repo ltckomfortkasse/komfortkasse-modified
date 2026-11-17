@@ -8,7 +8,7 @@ require_once 'Komfortkasse_Order.php';
  */
 class Komfortkasse
 {
-    const PLUGIN_VER = '1.4.5.2';
+    const PLUGIN_VER = '1.4.5.3';
     const MAXLEN_SSL = 117;
     const LEN_MCRYPT = 16;
 
@@ -395,6 +395,14 @@ class Komfortkasse
             return;
         }
 
+        // API key and access code hash are sent with the request, so only ever use TLS.
+        // Without the https stream wrapper (no openssl extension) skip the notification
+        // instead of falling back to plain HTTP; Komfortkasse still picks the order up
+        // on its regular sync.
+        if (!in_array('https', stream_get_wrappers())) {
+            return;
+        }
+
         $queryRaw = http_build_query($order);
 
         $queryEnc = Komfortkasse::kkencrypt($queryRaw);
@@ -405,11 +413,13 @@ class Komfortkasse
         $contextData = array ('method' => 'POST','timeout' => 2,'header' => "Connection: close\r\n" . 'Content-Length: ' . strlen($query) . "\r\n",'content' => $query
         );
 
-        $context = stream_context_create(array ('http' => $contextData
+        $sslData = array ('verify_peer' => true,'verify_peer_name' => true,'peer_name' => 'ssl.komfortkasse.eu'
+        );
+
+        $context = stream_context_create(array ('http' => $contextData,'ssl' => $sslData
         ));
 
-        // Development: http://localhost:8080/kkos01/api...
-        $result = @file_get_contents('http://api.komfortkasse.eu/api/shop/neworder.jsf', false, $context);
+        $result = @file_get_contents('https://ssl.komfortkasse.eu/api/shop/neworder.jsf', false, $context);
 
     }
 

@@ -51,10 +51,12 @@ class Komfortkasse_Config {
 		return self::$cache [$constant_key];
 	}
 	public static function getRequestParameter($key) {
-		if ($_POST [$key])
-			return urldecode($_POST [$key]);
-		else
-			return urldecode($_GET [$key]);
+		// POST wins if set and non-empty (as before); missing keys and arrays give ''
+		// instead of PHP 8 warnings / TypeErrors
+		$value = !empty($_POST [$key]) ? $_POST [$key] : (isset($_GET [$key]) ? $_GET [$key] : '');
+		if (!is_string($value))
+			return '';
+		return urldecode($value);
 	}
 
 	public static function getVersion() {

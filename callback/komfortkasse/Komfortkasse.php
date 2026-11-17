@@ -8,7 +8,7 @@ require_once 'Komfortkasse_Order.php';
  */
 class Komfortkasse
 {
-    const PLUGIN_VER = '1.4.5.3';
+    const PLUGIN_VER = '1.4.5.4';
     const MAXLEN_SSL = 117;
     const LEN_MCRYPT = 16;
 
@@ -85,7 +85,7 @@ class Komfortkasse
                     $order = Komfortkasse_Order::getRefund($id);
                 } else {
                     $order = Komfortkasse_Order::getOrder($id);
-                    if ($order['payment_method'])
+                    if ($order && !empty($order['payment_method']))
                         $order['type'] = self::getOrderType($order);
                 }
 
@@ -117,6 +117,10 @@ class Komfortkasse
      */
     public static function test()
     {
+        if (Komfortkasse::check() === false) {
+            return;
+        }
+
         $dec = Komfortkasse::kkdecrypt(Komfortkasse_Config::getRequestParameter('test'));
 
         $enc = Komfortkasse::kkencrypt($dec);
@@ -142,7 +146,8 @@ class Komfortkasse
         $hashed = md5(Komfortkasse_Config::getRequestParameter('accesscode'));
         $current = Komfortkasse_Config::getConfig(Komfortkasse_Config::accesscode);
         if ($current != '' && $current !== 'undefined' && $current != $hashed) {
-            Komfortkasse::output('Access Code already set! Shop ' . $current . ', given (hash) ' . $hashed);
+            // don't echo the stored access code hash to an unauthenticated caller
+            Komfortkasse::output('Access Code already set!');
             return;
         }
 
@@ -158,7 +163,7 @@ class Komfortkasse
         // Set API key.
         $apikey = Komfortkasse_Config::getRequestParameter('apikey');
         if (Komfortkasse_Config::getConfig(Komfortkasse_Config::apikey) != '' && Komfortkasse_Config::getConfig(Komfortkasse_Config::apikey) !== 'undefined' && Komfortkasse_Config::getConfig(Komfortkasse_Config::apikey) !== $apikey) {
-            Komfortkasse::output('API Key already set! Shop ' . Komfortkasse_Config::getConfig(Komfortkasse_Config::apikey) . ', given ' . $apikey);
+            Komfortkasse::output('API Key already set!');
             return;
         }
 
@@ -317,7 +322,7 @@ class Komfortkasse
                 Komfortkasse_Order::updateRefund($id, $status, $callbackid);
             } else {
                 $order = Komfortkasse_Order::getOrder($id);
-                if ($id != $order ['number']) {
+                if (!$order || $id != $order ['number']) {
                     continue;
                 }
 
@@ -410,7 +415,8 @@ class Komfortkasse
         $query = http_build_query(array ('q' => $queryEnc,'hash' => Komfortkasse_Config::getConfig(Komfortkasse_Config::accesscode),'key' => Komfortkasse_Config::getConfig(Komfortkasse_Config::apikey)
         ));
 
-        $contextData = array ('method' => 'POST','timeout' => 2,'header' => "Connection: close\r\n" . 'Content-Length: ' . strlen($query) . "\r\n",'content' => $query
+        // no redirects: a 307/308 would resend the POST body (incl. API key) elsewhere
+        $contextData = array ('method' => 'POST','timeout' => 2,'follow_location' => 0,'header' => "Connection: close\r\n" . 'Content-Length: ' . strlen($query) . "\r\n",'content' => $query
         );
 
         $sslData = array ('verify_peer' => true,'verify_peer_name' => true,'peer_name' => 'ssl.komfortkasse.eu'
@@ -506,12 +512,16 @@ class Komfortkasse
     public static function check()
     {
         $ac = Komfortkasse_Config::getRequestParameter('accesscode');
-
-        if (!$ac || md5($ac) !== Komfortkasse_Config::getConfig(Komfortkasse_Config::accesscode)) {
+        if (!is_string($ac) || $ac === '') {
             return false;
-        } else {
-            return true;
         }
+
+        $stored = (string) Komfortkasse_Config::getConfig(Komfortkasse_Config::accesscode);
+        $given = md5($ac);
+        if (function_exists('hash_equals')) {
+            return hash_equals($stored, $given);
+        }
+        return $stored === $given;
 
     }
 
@@ -787,7 +797,9 @@ class Komfortkasse
      */
     protected static function kk_csv($s)
     {
-        return '"' . str_replace('"', '', str_replace(';', ',', utf8_encode($s))) . '";';
+        // ISO-8859-1 -> UTF-8 as utf8_encode() did (deprecated since PHP 8.2), same output
+        $s = function_exists('mb_convert_encoding') ? mb_convert_encoding((string) $s, 'UTF-8', 'ISO-8859-1') : utf8_encode((string) $s);
+        return '"' . str_replace('"', '', str_replace(';', ',', $s)) . '";';
 
     }
 

@@ -8,7 +8,7 @@ require_once 'Komfortkasse_Order.php';
  */
 class Komfortkasse
 {
-    const PLUGIN_VER = '1.4.5.4';
+    const PLUGIN_VER = '1.4.5.5';
     const MAXLEN_SSL = 117;
     const LEN_MCRYPT = 16;
 
@@ -50,7 +50,7 @@ class Komfortkasse
      */
     public static function read($refunds)
     {
-        if (!Komfortkasse_Config::getConfig(Komfortkasse_Config::activate_export)) {
+        if (!Komfortkasse_Config::isActive(Komfortkasse_Config::activate_export)) {
             return;
         }
 
@@ -281,7 +281,7 @@ class Komfortkasse
      */
     public static function update($refunds)
     {
-        if (!Komfortkasse_Config::getConfig(Komfortkasse_Config::activate_update)) {
+        if (!Komfortkasse_Config::isActive(Komfortkasse_Config::activate_update)) {
             return;
         }
 
@@ -388,7 +388,7 @@ class Komfortkasse
      */
     public static function notifyorder($id)
     {
-        if (!Komfortkasse_Config::getConfig(Komfortkasse_Config::activate_export)) {
+        if (!Komfortkasse_Config::isActive(Komfortkasse_Config::activate_export)) {
             return;
         }
 
@@ -607,7 +607,7 @@ class Komfortkasse
      *
      * @return mixed
      */
-    protected static function kkcrypterror($encryption)
+    protected static function kkcrypterror($encryption = null)
     {
         if (!$encryption) {
             $encryption = Komfortkasse_Config::getConfig(Komfortkasse_Config::encryption);
@@ -867,7 +867,7 @@ class Komfortkasse
     public static function readinvoicepdf() {
         Komfortkasse_Order::getInvoicePdfPrepare();
 
-        if (!Komfortkasse_Config::getConfig(Komfortkasse_Config::activate_export)) {
+        if (!Komfortkasse_Config::isActive(Komfortkasse_Config::activate_export)) {
             return;
         }
 

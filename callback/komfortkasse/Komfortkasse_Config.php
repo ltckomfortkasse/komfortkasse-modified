@@ -4,7 +4,7 @@
  * Komfortkasse
  * Config Class
  *
- * @version 1.4.3-xtc3
+ * @version 1.4.5.5-xtc3
  */
 class Komfortkasse_Config {
 	const activate_export = 'KOMFORTKASSE_ACTIVATE_EXPORT';
@@ -44,11 +44,16 @@ class Komfortkasse_Config {
 		if (!array_key_exists($constant_key, self::$cache)) {
 			$config_q = xtc_db_query("SELECT configuration_value FROM " . TABLE_CONFIGURATION . " where configuration_key='" . xtc_db_input($constant_key) . "'");
 			$config_a = xtc_db_fetch_array($config_q);
-			$config = $config_a ['configuration_value'];
+			$config = $config_a ? $config_a ['configuration_value'] : null;
 			self::$cache [$constant_key] = $config;
 		}
 
 		return self::$cache [$constant_key];
+	}
+	// switches are 'true'/'false' select fields; the string 'false' must count as off
+	public static function isActive($constant_key) {
+		$value = strtolower(trim((string) self::getConfig($constant_key)));
+		return $value !== '' && $value !== '0' && $value !== 'false';
 	}
 	public static function getRequestParameter($key) {
 		// POST wins if set and non-empty (as before); missing keys and arrays give ''
